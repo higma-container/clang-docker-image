@@ -1,7 +1,7 @@
 # build
 
 ```sh
-docker build -t yoshiyasu1111/clang:v17 -t yoshiyasu1111/clang:v17.0 -t yoshiyasu1111/clang:v17.0.6 .
+docker build -t yoshiyasu1111/clang:v19 -t yoshiyasu1111/clang:v19.1 -t yoshiyasu1111/clang:v19.1.7 .
 ```
 
 # push
