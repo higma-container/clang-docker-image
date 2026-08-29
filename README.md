@@ -88,7 +88,7 @@ LLD：
 ```sh
 docker run --rm \
   ghcr.io/higma-container/clang:23 \
-  lld --version
+  ld.lld --version
 ```
 
 ## Using as a Base Image
@@ -125,7 +125,7 @@ clang++
 clangd
 clang-format
 clang-tidy
-lld
+ld.lld
 lldb
 ```
 
@@ -137,7 +137,7 @@ clang++-23
 clangd-23
 clang-format-23
 clang-tidy-23
-lld-23
+ld.lld-23
 lldb-23
 ```
 

@@ -50,7 +50,7 @@ LLDを確認：
 ```sh
 docker run --rm \
   clang:local \
-  lld --version
+  ld.lld --version
 ```
 
 ## Multi-platform Build
@@ -107,7 +107,7 @@ clang --version
 clang++ --version
 clangd --version
 lldb --version
-lld --version
+ld.lld --version
 ```
 
 さらに、以下のコマンドが存在することを確認します。
@@ -117,7 +117,7 @@ which clang
 which clang++
 which clangd
 which lldb
-which lld
+which ld.lld
 ```
 
 テストではClangのメジャーバージョンが23であることも確認します。
