@@ -86,31 +86,31 @@ jobs:
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'clang --version | grep -E "^clang version 23(\.|$)"'
-      
+            sh -c 'clang --version | grep "clang version ${{ env.CLANG_VERSION }}"'
+
       - name: Check Clang++
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'clang++ --version | grep -E "^clang version 23(\.|$)"'
-      
+            sh -c 'clang++ --version | grep "clang version ${{ env.CLANG_VERSION }}"'
+
       - name: Check Clangd
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'clangd --version | grep -E "^clangd version 23(\.|$)"'
-      
-      - name: Check LLD
-        run: |
-          docker run --rm \
-            ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'ld.lld --version | grep -E "^LLD 23(\.|$)"'
-      
+            sh -c 'clangd --version | grep "clangd version ${{ env.CLANG_VERSION }}"'
+
       - name: Check LLDB
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'lldb --version | grep -E "^lldb version 23(\.|$)"'
+            sh -c 'lldb --version | grep "lldb version ${{ env.CLANG_VERSION }}"'
+
+      - name: Check LLD
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'ld.lld --version | grep "LLD ${{ env.CLANG_VERSION }}"'
 
       - name: Check executable paths
         run: |
@@ -124,7 +124,6 @@ jobs:
               command -v lldb
               command -v lld
             '
-
 
   # ==========================================
   # Build & Test arm64
@@ -182,32 +181,32 @@ jobs:
       - name: Check Clang
         run: |
           docker run --rm \
-            ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'clang --version | grep -E "^clang version 23(\.|$)"'
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'clang --version | grep "clang version ${{ env.CLANG_VERSION }}"'
 
       - name: Check Clang++
         run: |
           docker run --rm \
-            ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'clang++ --version | grep -E "^clang version 23(\.|$)"'
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'clang++ --version | grep "clang version ${{ env.CLANG_VERSION }}"'
 
       - name: Check Clangd
         run: |
           docker run --rm \
-            ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'clangd --version | grep -E "^clangd version 23(\.|$)"'
-
-      - name: Check LLD
-        run: |
-          docker run --rm \
-            ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'ld.lld --version | grep -E "^LLD 23(\.|$)"'
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'clangd --version | grep "clangd version ${{ env.CLANG_VERSION }}"'
 
       - name: Check LLDB
         run: |
           docker run --rm \
-            ${{ env.IMAGE_NAME }}:test-amd64 \
-            sh -c 'lldb --version | grep -E "^lldb version 23(\.|$)"'
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'lldb --version | grep "lldb version ${{ env.CLANG_VERSION }}"'
+
+      - name: Check LLD
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'ld.lld --version | grep "LLD ${{ env.CLANG_VERSION }}"'
 
       - name: Check executable paths
         run: |
