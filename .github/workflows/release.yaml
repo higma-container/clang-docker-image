@@ -1,0 +1,196 @@
+name: Release Docker Image
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: higma-container/clang
+  CLANG_VERSION: "23"
+
+jobs:
+  # ==========================================
+  # Build amd64
+  # ==========================================
+  build-amd64:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------
+      # Build & Push
+      # ----------------------------------------
+      - name: Build and push amd64 image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}-amd64
+
+          build-args: |
+            CLANG_VERSION=${{ env.CLANG_VERSION }}
+
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ github.event.release.tag_name }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+          cache-from: |
+            type=gha,scope=clang-amd64
+
+          cache-to: |
+            type=gha,mode=max,scope=clang-amd64
+
+  # ==========================================
+  # Build arm64
+  # ==========================================
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------
+      # Build & Push
+      # ----------------------------------------
+      - name: Build and push arm64 image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}-arm64
+
+          build-args: |
+            CLANG_VERSION=${{ env.CLANG_VERSION }}
+
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ github.event.release.tag_name }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+          cache-from: |
+            type=gha,scope=clang-arm64
+
+          cache-to: |
+            type=gha,mode=max,scope=clang-arm64
+
+  # ==========================================
+  # Create multi-platform manifest
+  # ==========================================
+  publish:
+    runs-on: ubuntu-24.04
+
+    needs:
+      - build-amd64
+      - build-arm64
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------
+      # Version tag
+      # ----------------------------------------
+      - name: Create version tag
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}-arm64
+
+      # ----------------------------------------
+      # Major version tag
+      #
+      # v23.0.0 -> 23
+      # ----------------------------------------
+      - name: Create major version tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          MAJOR="${VERSION%%.*}"
+
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${MAJOR} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}
+
+      # ----------------------------------------
+      # latest tag
+      # ----------------------------------------
+      - name: Update latest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}
+
+      # ----------------------------------------
+      # Verify version image
+      # ----------------------------------------
+      - name: Inspect version image
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}
+
+      # ----------------------------------------
+      # Verify major version image
+      # ----------------------------------------
+      - name: Inspect major version image
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          MAJOR="${VERSION%%.*}"
+
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${MAJOR}
+
+      # ----------------------------------------
+      # Verify latest image
+      # ----------------------------------------
+      - name: Inspect latest image
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

@@ -1,0 +1,223 @@
+name: Test Docker Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/**'
+
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/**'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: clang
+  CLANG_VERSION: "23"
+
+jobs:
+  # ==========================================
+  # Build & Test amd64
+  # ==========================================
+  build-amd64:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # ----------------------------------------
+      # Validate Dockerfile
+      # ----------------------------------------
+      - name: Validate Dockerfile
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          call: check
+
+      # ----------------------------------------
+      # Build
+      # ----------------------------------------
+      - name: Build amd64 image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+
+          tags: |
+            ${{ env.IMAGE_NAME }}:test-amd64
+
+          build-args: |
+            CLANG_VERSION=${{ env.CLANG_VERSION }}
+
+          cache-from: |
+            type=gha,scope=clang-amd64
+
+          cache-to: |
+            type=gha,mode=max,scope=clang-amd64
+
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ env.CLANG_VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      # ----------------------------------------
+      # Test
+      # ----------------------------------------
+      - name: Check Clang
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'clang --version | grep "clang version 23"'
+
+      - name: Check Clang++
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'clang++ --version | grep "clang version 23"'
+
+      - name: Check Clangd
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'clangd --version | grep "clangd version 23"'
+
+      - name: Check LLDB
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'lldb --version | grep "lldb version 23"'
+
+      - name: Check LLD
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'lld --version | grep "LLD 23"'
+
+      - name: Check executable paths
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c '
+              set -eu
+              command -v clang
+              command -v clang++
+              command -v clangd
+              command -v lldb
+              command -v lld
+            '
+
+
+  # ==========================================
+  # Build & Test arm64
+  # ==========================================
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # ----------------------------------------
+      # Validate Dockerfile
+      # ----------------------------------------
+      - name: Validate Dockerfile
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          call: check
+
+      # ----------------------------------------
+      # Build
+      # ----------------------------------------
+      - name: Build arm64 image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+
+          tags: |
+            ${{ env.IMAGE_NAME }}:test-arm64
+
+          build-args: |
+            CLANG_VERSION=${{ env.CLANG_VERSION }}
+
+          cache-from: |
+            type=gha,scope=clang-arm64
+
+          cache-to: |
+            type=gha,mode=max,scope=clang-arm64
+
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ env.CLANG_VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      # ----------------------------------------
+      # Test
+      # ----------------------------------------
+      - name: Check Clang
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'clang --version | grep "clang version 23"'
+
+      - name: Check Clang++
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'clang++ --version | grep "clang version 23"'
+
+      - name: Check Clangd
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'clangd --version | grep "clangd version 23"'
+
+      - name: Check LLDB
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'lldb --version | grep "lldb version 23"'
+
+      - name: Check LLD
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'lld --version | grep "LLD 23"'
+
+      - name: Check executable paths
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c '
+              set -eu
+              command -v clang
+              command -v clang++
+              command -v clangd
+              command -v lldb
+              command -v lld
+            '
